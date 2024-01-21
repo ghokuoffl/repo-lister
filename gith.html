@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Repositories Viewer</title>
+    <style>
+        .page-button {
+            margin: 5px;
+            padding: 8px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+
+        .page-button:hover {
+            background-color: #0056b3;
+            transform: scale(1.1);
+        }
+        .repo-item {
+            box-sizing: border-box;
+            width: 48%;
+            margin: 1%;
+            border: 1px solid #ced4da;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #fff;
+            border-radius: 8px;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+
+        .repo-item:hover {
+            background-color: #f8f9fa;
+            transform: scale(1.05);
+        }
+
+        .repo-topic-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f8f9fa;
+        }
+
+        header {
+            background-color: #343a40;
+            color: white;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        main {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+            color: #495057;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #218838;
+        }
+
+        .repo-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+
+        .repo-item {
+            box-sizing: border-box;
+            width: 48%;
+            margin: 1%;
+            border: 1px solid #ced4da;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #fff;
+            border-radius: 8px;
+            transition: background-color 0.3s ease;
+        }
+
+        .repo-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .repo-topic-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .repo-topic {
+            margin: 5px;
+            padding: 8px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        a {
+            text-decoration: none;
+            color: #007bff;
+            font-weight: bold;
+        }
+
+        .pagination-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .page-button {
+            margin: 5px;
+            padding: 8px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .page-button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>GitHub Repositories Viewer</h1>
+    </header>
+
+    <main>
+        <label for="username">Enter GitHub Username:</label>
+        <input type="text" id="username" placeholder="Enter username">
+        <button onclick="getRepositories()">Show Repositories</button>
+
+        <div id="repos-container" class="repo-container"></div>
+        <div id="pagination-container" class="pagination-container"></div>
+    </main>
+
+    <script>
+        const itemsPerPage = 10;
+        let currentPage = 1;
+
+        function getRepositories() {
+            const username = document.getElementById('username').value;
+            const reposContainer = document.getElementById('repos-container');
+            const paginationContainer = document.getElementById('pagination-container');
+
+            // Clear previous results
+            reposContainer.innerHTML = '';
+            paginationContainer.innerHTML = '';
+
+            // Fetch repositories from GitHub API
+            fetch(`https://api.github.com/users/${username}/repos?per_page=${itemsPerPage}&page=${currentPage}`)
+                .then(response => {
+                    const linkHeader = response.headers.get('Link');
+                    const totalPages = linkHeader ? extractTotalPages(linkHeader) : 1;
+
+                    return response.json().then(repositories => ({ repositories, totalPages }));
+                })
+                .then(({ repositories, totalPages }) => {
+                    repositories.forEach(repo => {
+                        const repoItem = document.createElement('div');
+                        repoItem.className = 'repo-item';
+
+                        const repoLink = document.createElement('a');
+                        repoLink.href = repo.html_url;
+                        repoLink.textContent = repo.name;
+
+                        const repoTopics = repo.topics || [];
+
+                        const topicButtons = document.createElement('div');
+                        topicButtons.className = 'repo-topic-buttons';
+
+                        if (repoTopics.length > 0) {
+                            repoTopics.forEach(topic => {
+                                const topicButton = document.createElement('button');
+                                topicButton.className = 'repo-topic';
+                                topicButton.textContent = topic;
+                                topicButtons.appendChild(topicButton);
+                            });
+                        } else {
+                            const noTopicsButton = document.createElement('button');
+                            noTopicsButton.className = 'repo-topic';
+                            noTopicsButton.textContent = 'No Topics';
+                            topicButtons.appendChild(noTopicsButton);
+                        }
+
+                        repoItem.appendChild(repoLink);
+                        repoItem.appendChild(topicButtons);
+
+                        reposContainer.appendChild(repoItem);
+                    });
+
+                    // Pagination
+                    for (let i = 1; i <= totalPages; i++) {
+                        const pageButton = document.createElement('button');
+                        pageButton.className = 'page-button';
+                        pageButton.textContent = i;
+                        pageButton.addEventListener('click', () => {
+                            currentPage = i;
+                            getRepositories();
+                        });
+                        paginationContainer.appendChild(pageButton);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching repositories:', error);
+                    reposContainer.innerHTML = '<div>Error fetching repositories. Please check the username and try again.</div>';
+                });
+        }
+
+        function extractTotalPages(linkHeader) {
+            const match = linkHeader.match(/&page=(\d+)>; rel="last"/);
+            return match ? parseInt(match[1], 10) : 1;
+        }
+    </script>
+</body>
+</html>
